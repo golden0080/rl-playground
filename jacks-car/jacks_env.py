@@ -55,8 +55,8 @@ class JacksCarRental(discrete.DiscreteEnv):
                         real_act = -cur_b
 
                     # The reason we don't guard against overflow (after_a/b > capacity)
-                    # is that with act larger, it incurs more costs
-                    # An optimal policy will try to minimize the costs
+                    # is that with act larger, it incurs more costs and less available cars
+                    # An optimal policy will try to minimize the costs and maximize cars
 
                     after_a = min(cur_a - real_act, self.capacity)
                     after_b = min(cur_b + real_act, self.capacity)
