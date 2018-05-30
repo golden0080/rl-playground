@@ -31,8 +31,9 @@ class JacksCarRental(discrete.DiscreteEnv):
         self.nS = (capacity + 1) ^ 2
         self.nA = 2 * max_move + 1
 
-        # TODO(gh): init with proper shape, for outcome look up by a, b
         self._possible_outcomes = np.full((capacity + 1, capacity + 1), [])
+
+        self._init_p()
 
     def _to_ab(self, s):
         return (s / self.capacity_plus, s % self.capacity_plus)
