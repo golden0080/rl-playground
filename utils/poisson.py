@@ -6,7 +6,7 @@ def poisson_possibility_split(lam, max_x):
     p = math.exp(-lam)
     s = 0
     distributions = []
-    while x <= max_x:
+    while x < max_x:
         s += p
         distributions.append(p)
         x += 1

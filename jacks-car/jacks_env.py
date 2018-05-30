@@ -1,10 +1,11 @@
 import numpy as np
-# import sys
-# from six import StringIO, b
 
 from gym import utils
 from gym.envs.toy_text import discrete
 from utils import poisson
+
+# import sys
+# from six import StringIO, b
 
 
 class JacksCarRental(discrete.DiscreteEnv):
@@ -31,7 +32,7 @@ class JacksCarRental(discrete.DiscreteEnv):
         self.nA = 2 * max_move + 1
 
         # TODO(gh): init with proper shape, for outcome look up by a, b
-        self._possible_outcomes = None
+        self._possible_outcomes = np.full((capacity + 1, capacity + 1), [])
 
     def _to_ab(self, s):
         return (s / self.capacity_plus, s % self.capacity_plus)
@@ -40,7 +41,7 @@ class JacksCarRental(discrete.DiscreteEnv):
         return a * self.capacity_plus + b
 
     def _init_p(self):
-        P = None  # TODO(gh): np init with proper shape
+        P = np.full((self.nS, self.nA), [])
         for act in range(-self.move_max, self.move_max + 1):
             for cur_a in range(self.capacity):
                 for cur_b in range(self.capacity):
@@ -70,7 +71,30 @@ class JacksCarRental(discrete.DiscreteEnv):
         if self._possible_outcomes[a][b]:
             all_rent_rewards = self._possible_outcomes[a][b]
         else:
-            # TODO(gh): implement that traverse all possible states, to compute
-            pass
+            pA, pB = (poisson.poisson_possibility_split(self.lam_a[0], a),
+                      poisson.poisson_possibility_split(self.lam_b[0], b))
+            for ca, pa in enumerate(pA):
+                for cb, pb in enumerate(pB):
+                    cur_a = a - ca
+                    cur_b = b - cb
+                    prA, prB = (
+                        poisson.poisson_possibility_split(
+                            self.lam_a[1], self.capacity - cur_a),
+                        poisson.poisson_possibility_split(
+                            self.lam_b[1], self.capacity - cur_b),
+                    )
+                    for ra, pra in enumerate(prA):
+                        for rb, prb in enumerate(prB):
+                            cur_a += ra
+                            cur_b += rb
+                            next_s = self._to_s(cur_a, cur_b)
+                            all_rent_rewards.append((
+                                pa * pb * pra * prb,
+                                next_s,
+                                (pa + pb) * self.rent_income,
+                                False,
+                            ))
+            self._possible_outcomes[a][b] = all_rent_rewards
 
-        # TODO(gh): all reward will be updated with act
+        base_rew = act * self.move_cost
+        return [(p, n, r + base_rew, t) for p, n, r, t in all_rent_rewards]
